@@ -2,8 +2,68 @@ https://csdiy.wiki/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/MIT6.S081/
 环境opensuse：
 需要download 以前的qemu 版本，否者要死机，这在说明中写到过
 gdb 用这个 gdb-multiarch
+=======================================
+pa PA: 物理地址
+======================================
+void freerange(void *pa_start, void *pa_end);
 
---------------
+extern char end[]; // first address after kernel.
+                   // defined by kernel.ld.
+这个end是kernel.ld里面的一个label,大致意思就是kernel代码段，数据段末尾结束时的一个地址，这里是物理地址
+这样好处是end是可以跟者代码数据端变化而变化。
+因此kernel部分加载后大片的空余空间就是end->PHYSTOP
+
+struct run {
+  struct run *next;
+};
+
+struct {
+  struct spinlock lock;
+  struct run *freelist;
+} kmem;
+kmem就是个头，这个头有个锁和指向了个指针链表，每个链表里面都是地址，每个地址都指向一个4K的空间，也就是剩余的物理空间的所有地址
+被切割成了4K大小的块，每块的地址都被freelist给记录下来了
+void
+kinit()
+{
+  initlock(&kmem.lock, "kmem");
+  freerange(end, (void*)PHYSTOP); //这个freerange其实就是在建立整个空间能够用的物理地址块
+}
+
+void
+freerange(void *pa_start, void *pa_end)
+{
+  char *p;
+  p = (char*)PGROUNDUP((uint64)pa_start);
+  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
+    kfree(p);  //这个不要被free欺骗，其实在系统初始阶段是用来创建空闲物理块列表
+}
+
+// Free the page of physical memory pointed at by v,
+// which normally should have been returned by a
+// call to kalloc().  (The exception is when
+// initializing the allocator; see kinit above.)
+void
+kfree(void *pa)
+{
+  struct run *r;
+
+  if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
+    panic("kfree");
+
+  // Fill with junk to catch dangling refs.
+  memset(pa, 1, PGSIZE);
+
+  r = (struct run*)pa;
+
+  acquire(&kmem.lock);
+  r->next = kmem.freelist;
+  kmem.freelist = r;
+  release(&kmem.lock);
+}
+
+
+=====
 main()
 {
   if(cpuid() == 0){
@@ -41,4 +101,4 @@ procinit(void)
   }
   kvminithart();
 }
-------------
+
