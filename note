@@ -62,6 +62,42 @@ kfree(void *pa)
   release(&kmem.lock);
 }
 
+=====
+// Return the address of the PTE in page table pagetable
+// that corresponds to virtual address va.  If alloc!=0,
+// create any required page-table pages.
+//
+// The risc-v Sv39 scheme has three levels of page-table
+// pages. A page-table page contains 512 64-bit PTEs.
+// A 64-bit virtual address is split into five fields:
+//   39..63 -- must be zero.
+//   30..38 -- 9 bits of level-2 index.
+//   21..29 -- 9 bits of level-1 index.
+//   12..20 -- 9 bits of level-0 index.
+//    0..11 -- 12 bits of byte offset within the page.
+pte_t *
+walk(pagetable_t pagetable, uint64 va, int alloc)
+{
+  if(va >= MAXVA)
+    panic("walk");
+
+  for(int level = 2; level > 0; level--) {   
+    pte_t *pte = &pagetable[PX(level, va)];   //这里pagetable是一个页表root的地址, PX(level, va)取值就是取虚拟地址va 的30..38位，也就是level-2 index的值，
+    //然后pagetabele[x]就是从pagetable地址偏移x后的一个pte entry,最后把这个entry的地址给了pte这个指针
+    if(*pte & PTE_V) {
+      pagetable = (pagetable_t)PTE2PA(*pte);
+    } else {
+      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0) //如果表项还没有建立，那么通过kalloc找一个物理块并返回物理块的地址给pagetable
+        return 0;
+      memset(pagetable, 0, PGSIZE);
+      *pte = PA2PTE(pagetable) | PTE_V; 物理地址pagetable进行PA(物理地址) 2 PTE(页表项）的运算，物理地址>>12（4K） <10（pte末尾10位都是标志位，这样
+      做出了一个pte的entry, 并设置V有效，把这个值放到pte所指定的地方，下个循环就从新得到的pagetable开始得到21..29的偏移
+    }
+  }
+  return &pagetable[PX(0, va)];
+}
+
+
 
 =====
 main()
