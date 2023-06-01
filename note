@@ -1,5 +1,5 @@
 https://csdiy.wiki/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/MIT6.S081/  
-环境opensuse：
+环境ubuntu：
 需要download 以前的qemu 版本，否者要死机，这在说明中写到过
 gdb 用这个 gdb-multiarch
 =======================================
