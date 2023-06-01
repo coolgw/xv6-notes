@@ -3,3 +3,42 @@ https://csdiy.wiki/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/MIT6.S081/
 需要download 以前的qemu 版本，否者要死机，这在说明中写到过
 gdb 用这个 gdb-multiarch
 
+--------------
+main()
+{
+  if(cpuid() == 0){
+    consoleinit();
+    printfinit();
+    printf("\n");
+    printf("xv6 kernel is booting\n");
+    printf("\n");
+    kinit();         // physical page allocator
+    kvminit();       // create kernel page table
+    kvminithart();   // turn on paging  <===
+    procinit();      // process table
+    trapinit();      // trap vectors
+
+一旦开启了page,那么后面程序都开始使用虚拟地址，也就是后面程序里面的变量都是虚地址了。
+比如在kinit()里面
+void
+procinit(void)
+{
+  struct proc *p;
+
+  initlock(&pid_lock, "nextpid");
+  for(p = proc; p < &proc[NPROC]; p++) {
+      initlock(&p->lock, "proc");
+
+      // Allocate a page for the process's kernel stack.
+      // Map it high in memory, followed by an invalid
+      // guard page.
+      char *pa = kalloc();
+      if(pa == 0)
+        panic("kalloc");
+      uint64 va = KSTACK((int) (p - proc));  <====  这个变量p和proc都是虚拟地址了
+      kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+      p->kstack = va;
+  }
+  kvminithart();
+}
+------------
