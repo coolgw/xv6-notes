@@ -1,9 +1,21 @@
 https://csdiy.wiki/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/MIT6.S081/  
 环境ubuntu：
-需要download 以前的qemu 版本，否者要死机，这在说明中写到过
+需要download 以前的qemu 版本，否者要死机，这在文档里面写到过
 gdb 用这个 gdb-multiarch
 =======================================
-pa PA: 物理地址
+va: 虚拟地址
+pa: 物理地址
+pte: 指向pte的指针
+*pte: pte内容
+pagetable：指向pagetabel的指针
+
+当拿到一个虚拟地址va的时候，把虚拟地址分成3块，每块内容是一个偏移量
+申请一块物理内存，把这块物理内存的地址给root_pagetabale，也就是root页表地址，然后取虚拟地址的第一块偏移1st_offset，root_pagetable+1st_offset这个
+地址就是指向第一个pte, *pte内容开始是空的，这时候就需要申请第二块物理内存pa2，然后把这块物理内存
+的地址放到*pte，注意不是把pa2直接放到*pte,而是pa2>>12 <<10之后的值给*pte
+
+
+
 ======================================
 void freerange(void *pa_start, void *pa_end);
 
