@@ -7,7 +7,7 @@ va: 虚拟地址
 
 pa: 物理地址
 pte: 指向pte的指针
-*pte: pte内容
+*pte: pte内容,或者说是pte entry
 pagetable：指向pagetabel的指针
 
 当拿到一个虚拟地址va的时候，把虚拟地址分成3块，每块内容是一个偏移量
@@ -15,12 +15,12 @@ pagetable：指向pagetabel的指针
 地址就是指向第一个pte, *pte内容开始是空的(他需要指向下一级的pagetable)，这时候就需要申请第二块物理内存pa2，然后把这块物理内存
 的地址放到*pte，注意不是把pa2直接放到*pte,而是pa2>>12 <<10之后的值给*pte
 
+Let's go through gdb with walk function:
+
 (gdb) p va
 $9 = 268435456
 (gdb) p/x va
 $10 = 0x10000000
-
-
 91      // Look up a virtual address, return the physical address,
 92      // or 0 if not mapped.
 93      // Can only be used to look up user pages.
@@ -29,15 +29,14 @@ $10 = 0x10000000
 96      {
 97        pte_t *pte;
 (gdb) p pagetable 
-$1 = (pagetable_t) 0x87fff000  root_pagetable的首地址
-
+$1 = (pagetable_t) 0x87fff000  root_pagetable的首地址,这是分配的第一块物理内存地址
 (gdb) n
 74        if(va >= MAXVA)
 (gdb)
-78          pte_t *pte = &pagetable[PX(level, va)];
+78          pte_t *pte = &pagetable[PX(level, va)]; va是0x1000 0000， 取30..38位，值是0，所以就是表头偏移0位置就是要更新的*pte
 (gdb)
 79          if(*pte & PTE_V) {
-(gdb) p *pte   此时没有这个table  NOTE:va是0x1000 0000， 取30..38位，值是0，所以就是表头就指向第一个pte
+(gdb) p *pte   此时没有内容，说明虚拟内存没有被映射过，所以要开始设置
 $2 = 0
 (gdb) p pte
 $3 = (pte_t *) 0x87fff000
@@ -49,42 +48,38 @@ $3 = (pte_t *) 0x87fff000
 84            memset(pagetable, 0, PGSIZE);
 (gdb) p pagetable
 $4 = (pagetable_t) 0x87ffe000  这就是分配的第二块内存
-
 (gdb) n
 85            *pte = PA2PTE(pagetable) | PTE_V;
 (gdb)
 77        for(int level = 2; level > 0; level--) {
-(gdb) p pte
-No symbol "pte" in current context.
-(gdb) p *pte
-No symbol "pte" in current context.
-(gdb) x //20xw 0x87fff000
-A syntax error in expression, near `/20xw 0x87fff000'.
-(gdb) x /20xw 0x87fff000   第一个pte就在表头
+
+(gdb) x /20xw 0x87fff000   root pagetable位置，第一项就是30..38位偏移地方（0），里面存放了第二次申请的物理地址pa>>12 <<10
 0x87fff000:     0x21fff801      0x00000000      0x00000000      0x00000000
 0x87fff010:     0x00000000      0x00000000      0x00000000      0x00000000
 0x87fff020:     0x00000000      0x00000000      0x00000000      0x00000000
 0x87fff030:     0x00000000      0x00000000      0x00000000      0x00000000
 0x87fff040:     0x00000000      0x00000000      0x00000000      0x00000000
 
-
+第二轮循环，level=1,开始找下一级表
 (gdb) n
 78          pte_t *pte = &pagetable[PX(level, va)];
 (gdb) p pagetable
-$6 = (pagetable_t) 0x87ffe000  这是二级表头
+$6 = (pagetable_t) 0x87ffe000  这是二级表头地址
 (gdb) n
 79          if(*pte & PTE_V) {
 (gdb) p pte
-$7 = (pte_t *) 0x87ffe400 二级目录的pte = 二级表头 + offset 值取va的(21..29)=0x80 就是0x87ffe000[0x80],数组的每个元素都是64bit的指针，所以换算地址就是
+$7 = (pte_t *) 0x87ffe400 二级表中的偏移地址 pte = 二级表头地址 + offset*8 ,offset值取va的(21..29)值为0x80, 就是0x87ffe000[0x80],数组的每个元素都是64bit的指针，所以换算地址就是
 0x87ffe000 + 0x80*8(16进制换算就是0x80<<3=0x400) = 0x87ffe400
-内存单元是以byte为最小颗粒，所以64bit就是8个byte
+
+NOTE:内存单元是以byte为最小颗粒，所以64bit就是8个byte
+同样，这个*pte是没有被创建的，依旧走分配新物理内存的流程，并把新物理内存的值放到*pte里面去
 
 (gdb) n
 82            if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
 (gdb)
 84            memset(pagetable, 0, PGSIZE);
 (gdb) p pagetable
-$8 = (pagetable_t) 0x87ffd000
+$8 = (pagetable_t) 0x87ffd000  
 (gdb) n
 85            *pte = PA2PTE(pagetable) | PTE_V;
 (gdb) n
