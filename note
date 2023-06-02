@@ -16,6 +16,85 @@ pagetable：指向pagetabel的指针
 
 
 
+91      // Look up a virtual address, return the physical address,
+92      // or 0 if not mapped.
+93      // Can only be used to look up user pages.
+94      uint64
+95      walkaddr(pagetable_t pagetable, uint64 va)
+96      {
+97        pte_t *pte;
+(gdb) p pagetable 
+$1 = (pagetable_t) 0x87fff000  root_pagetable的首地址
+
+(gdb) n
+74        if(va >= MAXVA)
+(gdb)
+78          pte_t *pte = &pagetable[PX(level, va)];
+(gdb)
+79          if(*pte & PTE_V) {
+(gdb) p *pte   此时没有这个table  NOTE:va是0x1000 0000， 取30..38位，值是0，所以就是表头就指向第一个pte
+$2 = 0
+(gdb) p pte
+$3 = (pte_t *) 0x87fff000
+(gdb) n
+79          if(*pte & PTE_V) {
+(gdb)
+82            if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
+(gdb)
+84            memset(pagetable, 0, PGSIZE);
+(gdb) p pagetable
+$4 = (pagetable_t) 0x87ffe000  这就是分配的第二块内存
+
+(gdb) n
+85            *pte = PA2PTE(pagetable) | PTE_V;
+(gdb)
+77        for(int level = 2; level > 0; level--) {
+(gdb) p pte
+No symbol "pte" in current context.
+(gdb) p *pte
+No symbol "pte" in current context.
+(gdb) x //20xw 0x87fff000
+A syntax error in expression, near `/20xw 0x87fff000'.
+(gdb) x /20xw 0x87fff000   第一个pte就在表头
+0x87fff000:     0x21fff801      0x00000000      0x00000000      0x00000000
+0x87fff010:     0x00000000      0x00000000      0x00000000      0x00000000
+0x87fff020:     0x00000000      0x00000000      0x00000000      0x00000000
+0x87fff030:     0x00000000      0x00000000      0x00000000      0x00000000
+0x87fff040:     0x00000000      0x00000000      0x00000000      0x00000000
+
+
+(gdb) n
+78          pte_t *pte = &pagetable[PX(level, va)];
+(gdb) p pagetable
+$6 = (pagetable_t) 0x87ffe000  这是二级表头
+(gdb) n
+79          if(*pte & PTE_V) {
+(gdb) p pte
+$7 = (pte_t *) 0x87ffe400 二级目录的pte = 二级表头 + offset 值取va的(21..29)=0x80 就是0x87ffe000[0x80],数组的每个元素都是64bit的指针，所以换算地址就是
+0x87ffe000 + 0x80*8(16进制换算就是0x80<<3=0x400) = 0x87ffe400
+内存单元是以byte为最小颗粒，所以64bit就是8个byte
+
+(gdb) n
+82            if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
+(gdb)
+84            memset(pagetable, 0, PGSIZE);
+(gdb) p pagetable
+$8 = (pagetable_t) 0x87ffd000
+(gdb) n
+85            *pte = PA2PTE(pagetable) | PTE_V;
+(gdb) n
+77        for(int level = 2; level > 0; level--) {
+(gdb) x /20xw 0x87ffe400
+0x87ffe400:     0x21fff401      0x00000000      0x00000000      0x00000000
+0x87ffe410:     0x00000000      0x00000000      0x00000000      0x00000000
+0x87ffe420:     0x00000000      0x00000000      0x00000000      0x00000000
+0x87ffe430:     0x00000000      0x00000000      0x00000000      0x00000000
+0x87ffe440:     0x00000000      0x00000000      0x00000000      0x00000000
+(gdb)
+
+
+
+
 ======================================
 void freerange(void *pa_start, void *pa_end);
 
