@@ -1,12 +1,20 @@
 va: 虚拟地址
+//   39..63 -- must be zero.
+//   30..38 -- 9 bits of level-2 index.
+//   21..29 -- 9 bits of level-1 index.
+//   12..20 -- 9 bits of level-0 index.
+//    0..11 -- 12 bits of byte offset within the page.
+
 pa: 物理地址
 pte: 指向pte的指针
 *pte: pte内容
 pagetable：指向pagetabel的指针
 
+
+
 当拿到一个虚拟地址va的时候，把虚拟地址分成3块，每块内容是一个偏移量
-申请一块物理内存，把这块物理内存的地址给root_pagetabale，也就是root页表地址，然后取虚拟地址的第一块偏移1st_offset，root_pagetable+1st_offset这个
-地址就是指向第一个pte, *pte内容开始是空的，这时候就需要申请第二块物理内存pa2，然后把这块物理内存
+申请一块物理内存，把这块物理内存的地址给root——pagetable，也就是root页表地址，然后取虚拟地址的第一块偏移1st_offset，root_pagetable+1st_offset*8这个
+地址就是指向第一个pte, *pte内容开始是空的(他需要指向下一级的pagetable)，这时候就需要申请第二块物理内存pa2，然后把这块物理内存
 的地址放到*pte，注意不是把pa2直接放到*pte,而是pa2>>12 <<10之后的值给*pte
 
 (gdb) p va
