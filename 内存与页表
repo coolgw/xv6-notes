@@ -205,6 +205,7 @@ main()
     procinit();      // process table
     trapinit();      // trap vectors
 
+一下的话是扯淡，开启分页，只是所有地址需要通过页表查询后得到真实的物理地址。只有在用户空间的程序才是虚拟地址，因为kernel里面都是一一映射的
 一旦开启了page,那么后面程序都开始使用虚拟地址，也就是后面程序里面的变量都是虚地址了。
 比如在kinit()里面
 void
