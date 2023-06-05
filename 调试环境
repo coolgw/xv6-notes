@@ -8,3 +8,33 @@ cat /root/.gdbinit
 file /root/xv6-labs-2020/kernel/kernel
 target remote :25000
 b walk
+
+https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf
+调试过程中重要的寄存器（查看页表）
+i r all  //这个可以看到更多的寄存器
+sepc           0x80005cb2       2147507378   //出现问题的那一行代码，可以用disassemble $sepc 来看是哪条语句
+scause         0xf      15    //表示页表fault
+stval          0x3eab84a3f0     269165569008  //这里放着被访问的虚拟地址，也就是访问这个地址导致的page fault
+
+有时候串口不打印任何东西，很可能是串口输出地址页表没有映射或者损坏，这个时候gdb进去看看寄存器可以得到一些提示
+i threads 看看那个线程大概出了问题
+
+kvmcreate()
+{
+  pagetable_t pagetable;
+  int i;
+
+  pagetable = uvmcreate();
+  /* for(i = 0; i < 512; i++) { */
+  for(i = 1; i < 512; i++) {
+    pagetable[i] = kernel_pagetable[i];
+    /* pagetable[i] = 0; */
+  }
+
+vmprint(pagetable);
+vmprint(kernel_pagetable);
+
+  // uart registers
+  /* kvmmapkern(pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W); */   //比如注销这行意味着串口部分的地址没有进行映射，之后会出现page fault,但这时候串口已经无法打印了
+
+
