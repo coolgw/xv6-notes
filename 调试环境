@@ -36,5 +36,7 @@ vmprint(kernel_pagetable);
 
   // uart registers
   /* kvmmapkern(pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W); */   //比如注销这行意味着串口部分的地址没有进行映射，之后会出现page fault,但这时候串口已经无法打印了
+  
+  但为什么page fault 发生在访问0x3eab84xxx上面，而不是访问串口的虚拟地址上面？
 
 
