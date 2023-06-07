@@ -205,8 +205,17 @@ main()
     procinit();      // process table
     trapinit();      // trap vectors
 
-一下的话是扯淡，开启分页，只是所有地址需要通过页表查询后得到真实的物理地址。只有在用户空间的程序才是虚拟地址，因为kernel里面都是一一映射的
-一旦开启了page,那么后面程序都开始使用虚拟地址，也就是后面程序里面的变量都是虚地址了。
+开启分页后，所有地址需要通过页表查询后得到真实的物理地址。kernel空间用kernel page table, user 空间用user page table
+kernel空间里面有大部分做的是一一映射，也就是物理地址就是虚拟地址
+比如下面代码如何通过地址调用func就是用了虚拟地址，而不是物理地址了。
+kernel/trap.c
+// jump to trampoline.S at the top of memory, which
+  // switches to the user page table, restores user registers,
+  // and switches to user mode with sret.
+  uint64 fn = TRAMPOLINE + (userret - trampoline);  //这里开始找fn的地址就是用的虚拟地址，也就是kernel page table里面映射TRAMPOLINE.
+  ((void (*)(uint64,uint64))fn)(TRAPFRAME, satp);
+}
+
 比如在kinit()里面
 void
 procinit(void)
@@ -223,7 +232,7 @@ procinit(void)
       char *pa = kalloc();
       if(pa == 0)
         panic("kalloc");
-      uint64 va = KSTACK((int) (p - proc));  <====  这个变量p和proc都是虚拟地址了
+      uint64 va = KSTACK((int) (p - proc));  <====  这里只是p 到proc的偏移，然后KSTACK算了一个虚拟地址高位地址
       kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
       p->kstack = va;
   }
