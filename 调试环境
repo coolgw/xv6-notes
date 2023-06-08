@@ -1,5 +1,8 @@
 https://csdiy.wiki/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/MIT6.S081/  
 https://www.bilibili.com/video/BV19k4y1C7kA?p=14&vd_source=3cd91e15dc088723a0bd732ae89ea37b  bili上面上课的video
+
+riscv 文档：
+https://github.com/riscv/riscv-isa-manual/releases/tag/riscv-isa-release-1239329-2023-05-23
 环境ubuntu：
 需要download 以前的qemu 版本，否者要死机，这在文档里面写到过
 gdb 用这个 gdb-multiarch
