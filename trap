@@ -1,1 +1,12 @@
+stvec: 存储trap handler， tvec= trap vec?  发生trap时，把pc = stvec
+sepc: 当trap发生时，把pc存在这里， 终端返回sret把pc=sepc
+scause: trap reason
+sscratch: 进入trap前保存user模式的一些状态的地址，代码里面就是trapframe
+sstatus:  SIE 中断控制  SPP:发生trap前在那个模式
+
+uservec是哪里设置的？
+kernel/trap.c:101:  w_stvec(TRAMPOLINE + (uservec - trampoline));  这个是在usertrapret里面设置，肯定不是初始设定的地方
+kernel/kernel.asm:5626:  w_stvec(TRAMPOLINE + (uservec - trampoline)); 这个是生成asm文件
+
+
 
