@@ -13,6 +13,12 @@ file /root/xv6-labs-2020/kernel/kernel
 target remote :25000
 b walk
 
+
+gdb debug with si ni will go through asm line by line
+layout asm will open UI window, ctl+x and ctl+a will open/close UI.
+
+
+
 https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf
 调试过程中重要的寄存器（查看页表）
 i r all  //这个可以看到更多的寄存器
