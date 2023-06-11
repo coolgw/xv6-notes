@@ -11,7 +11,7 @@ uservec是哪里设置的？
 
 userinit-->allocproc
     p->context.ra = (uint64)forkret; //这个设置会让这个process switch的ra变成forkret
-//ra 寄存器存的是ret的返回地址，也就是ret要跳转的地方
+//ra 寄存器存的是ret的返回地址，也就是ret要跳转的地方  ra=return address
 //这样在switch函数内
 .globl swtch
 swtch:
