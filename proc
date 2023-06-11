@@ -1,0 +1,33 @@
+(gdb) p cpus[0]  //this is scheduler
+$59 = {proc = 0x0, context = {ra = 2147492500, sp = 2147526592, s0 = 2147526672,
+    s1 = 2147557080, s2 = 2, s3 = 2147580264, s4 = 2147555664, s5 = 3,
+    s6 = 2147555696, s7 = 9223372036854775808, s8 = 1, s9 = 0, s10 = 0, s11 = 0},
+  noff = 0, intena = 1}
+(gdb) p proc[0] // this is init
+$61 = {lock = {locked = 0, name = 0x80008248 "proc", cpu = 0x0}, state = SLEEPING,
+  parent = 0x0, chan = 0x80011d68 <proc>, killed = 0, xstate = 0, pid = 1,
+  kstack = 274877894656, sz = 12288, pagetable = 0x87f68000,
+  trapframe = 0x87f76000, context = {ra = 2147492710, sp = 274877898480,
+    s0 = 274877898528, s1 = 2147556712, s2 = 2147555664, s3 = 1, s4 = 4, s5 = 1,
+    s6 = 0, s7 = 0, s8 = 361700864190383365, s9 = 361700864190383365,
+    s10 = 361700864190383365, s11 = 361700864190383365}, ofile = {
+    0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>,
+    0x0 <repeats 13 times>}, cwd = 0x80020078 <icache+24>,
+  name = "init\000\000de\000\000\000\000\000\000\000", kpagetable = 0x87f72000}
+(gdb) p proc[1] // this is sh
+$62 = {lock = {locked = 0, name = 0x80008248 "proc", cpu = 0x0}, state = SLEEPING,
+  parent = 0x80011d68 <proc>, chan = 0x800118c8 <cons+152>, killed = 0,
+  xstate = 0, pid = 2, kstack = 274877886464, sz = 16384, pagetable = 0x87f56000,
+  trapframe = 0x87f69000, context = {ra = 2147492710, sp = 274877890192,
+    s0 = 274877890240, s1 = 2147557080, s2 = 2147555664, s3 = 1, s4 = 16175,
+    s5 = 1, s6 = 1, s7 = 4, s8 = 18446744073709551615, s9 = 10,
+    s10 = 361700864190383365, s11 = 361700864190383365}, ofile = {
+    0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>,
+    0x0 <repeats 13 times>}, cwd = 0x80020078 <icache+24>,
+  name = "sh", '\000' <repeats 13 times>, kpagetable = 0x87f6a000}
+
+一般情况下一个cpu里面就运行scheduler, 可以switch 的进程也就是proc[0] init 和 proc[1] sh.
+当执行ls的时候，fork开始创建一个新的进程
+并把parent设置成sh
+设置状态为runnable,这样一旦scheduler发现这个能运行的就会switch到这个进程上面去运行
+
