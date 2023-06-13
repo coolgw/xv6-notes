@@ -39,4 +39,14 @@ scheduler 和 sched都调用了swtch这个函数使其在scheduler和其他进�
    3    540  kernel/proc.c <<sched>>
              swtch(&p->context, &mycpu()->context);
 
-而用户态trap有可能
+sscratch是怎样被设置成trap frame的,由上面可以知道创建新的进程后首先会调用到forkret，而在后续的调用里面就有设置sscratch的步骤，其实userret是会被
+首先调用的.
+forkret-->usertrapret-->((void (*)(uint64,uint64))fn)(TRAPFRAME, satp) //这个其实就是userret(TRAPFRAME,satp)-->
+        # put the saved user a0 in sscratch, so we
+        # can swap it with our a0 (TRAPFRAME) in the last step.
+        ld t0, 112(a0)
+        csrw sscratch, t0   <====
+
+
+
+
