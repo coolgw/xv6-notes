@@ -33,10 +33,6 @@ forkret
       w_stvec(TRAMPOLINE + (uservec - trampoline));  这里设置了uservec给trap register
 
 
-gdb debug with si ni will go through asm line by line
-layout asm will open UI window, ctl+x and ctl+a will open/close UI.
-
-
 scheduler 和 sched都调用了swtch这个函数使其在scheduler和其他进程间切换，其他进程也可能在内核，也可能在用户态
    2    493  kernel/proc.c <<scheduler>>
              swtch(&c->context, &p->context);
