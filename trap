@@ -40,7 +40,7 @@ scheduler 和 sched都调用了swtch这个函数使其在scheduler和其他进�
              swtch(&p->context, &mycpu()->context);
 
 sscratch是怎样被设置成trap frame的,由上面可以知道创建新的进程后首先会调用到forkret，而在后续的调用里面就有设置sscratch的步骤，其实userret是会被
-首先调用的.
+首先调用的,userret也是用来进程跳到用户空间的步骤，之后用户空间发生了trap, cpu就会找到uservec然后执行，在uservec得到执行时sscratch就是前面说设置的trapframe.
 forkret-->usertrapret-->((void (*)(uint64,uint64))fn)(TRAPFRAME, satp) //这个其实就是userret(TRAPFRAME,satp)-->
         # put the saved user a0 in sscratch, so we
         # can swap it with our a0 (TRAPFRAME) in the last step.
