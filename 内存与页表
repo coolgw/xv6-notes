@@ -215,27 +215,10 @@ kernel/trap.c
   uint64 fn = TRAMPOLINE + (userret - trampoline);  //这里开始找fn的地址就是用的虚拟地址，也就是kernel page table里面映射TRAMPOLINE.
   ((void (*)(uint64,uint64))fn)(TRAPFRAME, satp);
 }
-
-比如在kinit()里面
-void
-procinit(void)
+一旦启用了硬件的虚拟地址映射，意味着程序里面用的取地址的操作都会通过页表来转换，下面还有个例子
+copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
-  struct proc *p;
+  memmove((void *) dst, (void *)srcva, len); //这里srcva和dst里面代表的地址都会通过页表操作得到实际物理地址来操作，也就是凡是涉及地址操作的都会通过页表来映射
+  return 0;
 
-  initlock(&pid_lock, "nextpid");
-  for(p = proc; p < &proc[NPROC]; p++) {
-      initlock(&p->lock, "proc");
-
-      // Allocate a page for the process's kernel stack.
-      // Map it high in memory, followed by an invalid
-      // guard page.
-      char *pa = kalloc();
-      if(pa == 0)
-        panic("kalloc");
-      uint64 va = KSTACK((int) (p - proc));  <====  这里只是p 到proc的偏移，然后KSTACK算了一个虚拟地址高位地址
-      kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
-      p->kstack = va;
-  }
-  kvminithart();
-}
 
