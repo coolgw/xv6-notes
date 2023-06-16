@@ -253,3 +253,47 @@ Breakpoint 1, copyin (pagetable=0x87f75000, dst=dst@entry=0x3fffffddf0 "", srcva
 .. .. .. 364: pte 0x0000000021fdb0c7 pa 0x0000000087f6c000  <====
 .. .. .. 365: pte 0x0000000021fdb4c7 pa 0x0000000087f6d000
 这样得到的物理页框地址为0x0000000087f6c000 ，然后加上后12位的偏移02b,最终物理地址就是0x0000000087f6c02b,和虚拟地址是一摸一样的，证明了是一一对应
+
+
+====一旦出现panic并且是与页表相关的问题===
+(gdb) bt 首先看看stack里面什么情况，这里是怀疑copyin里面出了问题，那为什么stack上有kernelvec kerneltrap?难道是copyin里面panic后还能
+#0  panic (s=s@entry=0x80008400 "kerneltrap") at kernel/printf.c:125
+#1  0x0000000080002bec in kerneltrap () at kernel/trap.c:150
+#2  0x0000000080005e04 in kernelvec ()
+#3  0x000000008000185c in copyin (pagetable=<optimized out>, dst=0x3fffffbdf0 "\005\005\005\005\005\005\005\005\060\n", srcva=2608, len=8) at kernel/vm.c:432
+#4  0x0000003fffffbdd0 in ?? ()
+
+(gdb) p/x $scause
+$2 = 0xd   <===load fault
+
+sepc里面放着panic时候指令
+(gdb) p/x $sepc
+$6 = 0x80000d76
+(gdb) disassemble 2147487094
+Dump of assembler code for function memmove:
+   0x0000000080000d6e <+22>:    add     a3,a3,a1
+   0x0000000080000d70 <+24>:    mv      a5,a0
+   0x0000000080000d72 <+26>:    addi    a1,a1,1
+   0x0000000080000d74 <+28>:    addi    a5,a5,1
+   0x0000000080000d76 <+30>:    lbu     a4,-1(a1) <========
+   0x0000000080000d7a <+34>:    sb      a4,-1(a5)
+   0x0000000080000d7e <+38>:    bne     a1,a3,0x80000d72 <memmove+26>
+   0x0000000080000d82 <+42>:    ld      s0,8(sp)
+查看当前页表：
+(gdb) p/x $satp
+$12 = 0x8000000000087f6b
+
+cpu scheduler 的页表
+(gdb) p cpus[0]->proc->pagetable
+$9 = (pagetable_t) 0x87f75000
+
+可以看出是proc[1]的kpagetable出了问题，没有对srcva=2608映射页面
+(gdb) p proc[0]
+$10 = {lock = {locked = 0, name = 0x80008228 "proc", cpu = 0x0}, state = SLEEPING, parent = 0x0, chan = 0x80011d68 <proc>, killed = 0, xstate = 0, pid = 1, kstack = 274877894656, sz = 12288,
+  pagetable = 0x87f67000, trapframe = 0x87f76000, context = {ra = 2147492646, sp = 274877898480, s0 = 274877898528, s1 = 2147556712, s2 = 2147555664, s3 = 1, s4 = 4, s5 = 1, s6 = 0, s7 = 0,
+    s8 = 361700864190383365, s9 = 361700864190383365, s10 = 361700864190383365, s11 = 361700864190383365}, ofile = {0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>,
+    0x0 <repeats 13 times>}, cwd = 0x80020078 <icache+24>, name = "init\000\000de\000\000\000\000\000\000\000", kpagetable = 0x87f72000}
+(gdb) p proc[1]
+$13 = {lock = {locked = 0, name = 0x80008228 "proc", cpu = 0x0}, state = RUNNING, parent = 0x80011d68 <proc>, chan = 0x0, killed = 0, xstate = 0, pid = 2, kstack = 274877886464, sz = 12288,
+  pagetable = 0x87f75000, trapframe = 0x87f68000, context = {ra = 2147490930, sp = 274877890560, s0 = 0, s1 = 0, s2 = 0, s3 = 0, s4 = 0, s5 = 0, s6 = 0, s7 = 0, s8 = 0, s9 = 0, s10 = 0, s11 = 0}, ofile = {
+    0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>, 0x0 <repeats 13 times>}, cwd = 0x80020078 <icache+24>, name = "init", '\000' <repeats 11 times>, kpagetable = 0x87f6b000}
