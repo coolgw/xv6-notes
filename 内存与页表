@@ -256,7 +256,9 @@ Breakpoint 1, copyin (pagetable=0x87f75000, dst=dst@entry=0x3fffffddf0 "", srcva
 
 
 ====一旦出现panic并且是与页表相关的问题===
-(gdb) bt 首先看看stack里面什么情况，这里是怀疑copyin里面出了问题，那为什么stack上有kernelvec kerneltrap?难道是copyin里面panic后还能
+首先看看stack里面什么情况，这里是怀疑copyin里面出了问题，那为什么stack上有kernelvec kerneltrap?这其实是copyin里面有些操作导致了load page fault,但是程序仍然可以接受interrup,最后在kerneltrap里面发现
+无法识别的scause然后出发了panic函数，这时候出现了for死循环把程序hold住，这意味着即使程序出现page fault,流程并没有在这里结束，还有可能走中断流程？
+(gdb) bt 
 #0  panic (s=s@entry=0x80008400 "kerneltrap") at kernel/printf.c:125
 #1  0x0000000080002bec in kerneltrap () at kernel/trap.c:150
 #2  0x0000000080005e04 in kernelvec ()
