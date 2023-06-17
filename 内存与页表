@@ -299,3 +299,11 @@ $10 = {lock = {locked = 0, name = 0x80008228 "proc", cpu = 0x0}, state = SLEEPIN
 $13 = {lock = {locked = 0, name = 0x80008228 "proc", cpu = 0x0}, state = RUNNING, parent = 0x80011d68 <proc>, chan = 0x0, killed = 0, xstate = 0, pid = 2, kstack = 274877886464, sz = 12288,
   pagetable = 0x87f75000, trapframe = 0x87f68000, context = {ra = 2147490930, sp = 274877890560, s0 = 0, s1 = 0, s2 = 0, s3 = 0, s4 = 0, s5 = 0, s6 = 0, s7 = 0, s8 = 0, s9 = 0, s10 = 0, s11 = 0}, ofile = {
     0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>, 0x80021c68 <ftable+24>, 0x0 <repeats 13 times>}, cwd = 0x80020078 <icache+24>, name = "init", '\000' <repeats 11 times>, kpagetable = 0x87f6b000}
+
+=====如果没有gdb,出现panic后你可以通过sepc的地址找asm文件
+(gdb) p/x $sepc
+$7 = 0x80000d76
+(gdb) p/x $stval
+root@coolgw-VirtualBox:~/xv6-labs-2020/kernel# grep -risn 80000d76 *
+kernel.asm:1851:    80000d76:   fff5c703                lbu     a4,-1(a1)   <====这一行就是出错的那一行，如果你能确认是在哪个进程出错，直接找对应的proc的asm文件
+
