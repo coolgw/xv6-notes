@@ -220,6 +220,11 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
   memmove((void *) dst, (void *)srcva, len); //这里srcva和dst里面代表的地址都会通过页表操作得到实际物理地址来操作，也就是凡是涉及地址操作的都会通过页表来映射
   return 0;
+从cpu的角度来说，比如一个指令sd $7, (a0)， 这条指令是把$7放到a0所表示的地址，一旦出现要取地址的时候就要注意了，开启页表后a0里面代表的地址就不是真实的
+物理地址了，他必须通过页表映射，也就是说开启地址映射后，凡是取地址的时候就会必须要经过MMU这个硬件。
+https://mit-public-courses-cn-translatio.gitbook.io/mit6-s081/lec04-page-tables-frans/4.3-ye-biao-page-table  这里有很详细的说明，其实我在之前也是老在这个
+地方有误解，不知道开启mmu后到底对于程序是个什么影响，如果从cpu角度来认识这个问题一切都明了了，程序代码被翻译汇编指令后存取地址都会是虚拟地址。c语言代码里面表示地址的
+一些变量都要被mmu转义后才能用。
 
 ====怎样查看页表
 page table 0x0000000087f72000
