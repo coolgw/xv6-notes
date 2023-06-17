@@ -262,7 +262,7 @@ Breakpoint 1, copyin (pagetable=0x87f75000, dst=dst@entry=0x3fffffddf0 "", srcva
 #0  panic (s=s@entry=0x80008400 "kerneltrap") at kernel/printf.c:125
 #1  0x0000000080002bec in kerneltrap () at kernel/trap.c:150
 #2  0x0000000080005e04 in kernelvec ()
-#3  0x000000008000185c in copyin (pagetable=<optimized out>, dst=0x3fffffbdf0 "\005\005\005\005\005\005\005\005\060\n", srcva=2608, len=8) at kernel/vm.c:432
+#3  0x000000008000185c in copyin (pagetable=<optimized out>, dst=0x3fffffbdf0 "\005\005\005\005\005\005\005\005\060\n", srcva=2608, len=8) at kernel/vm.c:432  //$stval=2608也就是被翻译的srcva
 #4  0x0000003fffffbdd0 in ?? ()
 
 (gdb) p/x $scause
