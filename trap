@@ -49,4 +49,13 @@ forkret-->usertrapret-->((void (*)(uint64,uint64))fn)(TRAPFRAME, satp) //这个�
 
 
 
+====trapframe
+trapframe是trampoline.S. 的data部分，创建proc的时候把他map到了下面地方。
+  // map the trapframe just below TRAMPOLINE, for trampoline.S.
+  if(mappages(pagetable, TRAPFRAME, PGSIZE,
+              (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
+    uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+    uvmfree(pagetable, 0);
+    return 0;
+  }
 
