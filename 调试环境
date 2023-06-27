@@ -76,4 +76,39 @@ Dump of assembler code for function uartputc_sync:
    0x0000000080000834 <+66>:    ld      ra,24(sp)
 
 
+===异常比如page fault也是要触发中断的,下面的堆栈可以很好的解释这一切的发生===
+(gdb) bt
+#0  panic (s=s@entry=0x80008400 "kerneltrap") at kernel/printf.c:125
+#1  0x0000000080002c06 in kerneltrap () at kernel/trap.c:150
+#2  0x0000000080005e14 in kernelvec ()
+#3  0x000000008000185c in copyin (pagetable=<optimized out>, dst=0x3fffff9df0 "\005\005\005\005\005\005\005\005X?\001", srcva=81752, len=8) at kernel/vm.c:432
+#4  0x0000003fffff9dd0 in ?? ()
+#5  0x0000000080002cc8 in fetchaddr (addr=81752, ip=ip@entry=0x3fffff9df0) at kernel/syscall.c:17
+#6  0x0000000080005c20 in sys_exec () at kernel/sysfile.c:430
+#7  0x0000000080002dde in syscall () at kernel/syscall.c:140
+#8  0x0000000080002b28 in usertrap () at kernel/trap.c:68
+#9  0x00000000000000fe in ?? ()
+Backtrace stopped: previous frame inner to this frame (corrupt stack?)
+(gdb)
+sstatus        0x120    288
+sie            0x222    546
+stvec          0x80005dd0       2147507664
+scounteren     0x0      0
+sscratch       0x1560   5472
+sepc           0x80000d76       2147487094   <=== point to memmove function
+scause         0xd      13   <===page load fault
+stval          0x13f58  81752
+sip            0x202    514
+satp           0x8000000000087f5b       -9223372036854218917
+(gdb) x 0x80000d76
+0x80000d76 <memmove+30>:        0x03
+调用栈上显示copyin,其实是里面的memmove出了问题,在$sepc里面存的，那为什那么后面的栈显示kernelvec 和kerneltrap? 这就是cpu在memmove里面的lbu指令出现page fault,因此直接触发了
+中断流程，又因为中断中没有处理这种情况，最后停在了panic函数里面
 
+(gdb) disassemble $sepc (0x80000d76)
+Dump of assembler code for function memmove:
+   0x0000000080000d72 <+26>:    addi    a1,a1,1
+   0x0000000080000d74 <+28>:    addi    a5,a5,1
+   0x0000000080000d76 <+30>:    lbu     a4,-1(a1)  
+   lbu应该是把-1(a1)的值作为一个地址，取地址里面的值放到a4里面,而这个地址就放在stval里面（stval会保存要读取的地址）
+如果你查看a1 0x13f59，stval里面的地址0x13f58正好是a1-1.
