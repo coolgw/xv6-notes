@@ -112,3 +112,8 @@ Dump of assembler code for function memmove:
    0x0000000080000d76 <+30>:    lbu     a4,-1(a1)  
    lbu应该是把-1(a1)的值作为一个地址，取地址里面的值放到a4里面,而这个地址就放在stval里面（stval会保存要读取的地址）
 如果你查看a1 0x13f59，stval里面的地址0x13f58正好是a1-1.
+
+
+
+
+===lock的调试？？===
